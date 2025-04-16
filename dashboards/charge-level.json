@@ -1,0 +1,431 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "注释与警报",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "icon": "dashboard",
+      "tags": [],
+      "title": "TeslaMate 主面板",
+      "tooltip": "",
+      "type": "link",
+      "url": "${base_url:raw}"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "tags": [
+        "tesla"
+      ],
+      "title": "仪表板列表",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 4,
+      "panels": [],
+      "repeat": "car_id",
+      "title": "$car_id",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "TeslaMate"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "电池电量",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "decimals": 0,
+          "links": [],
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent"
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 21,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "min"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "alias": "",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "TeslaMate"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n\tdate_bin('2 minutes'::interval, date at time zone 'UTC', to_timestamp(${__from:date:seconds})) as time,\n\tavg(battery_level) AS \"电池电量\",\n\tavg(usable_battery_level) AS \"可用电池电量\"\nfrom positions\n\tWHERE $__timeFilter(date) AND car_id = $car_id and ideal_battery_range_km is not null\n\tgroup by time\n\tORDER BY time ASC\n;",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "TeslaMate"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  20 as lower,\r\n  CASE WHEN lfp_battery THEN 100 ELSE 80 END as upper\r\nfrom cars inner join car_settings on cars.settings_id = car_settings.id\r\nwhere cars.id = $car_id",
+          "refId": "B",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "TeslaMate"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "-- 为计算非均匀采样值的百分位数，我们先将数据分桶并填充空缺值\nwith positions_filtered as (\n    select\n        date,\n        battery_level\n    from\n        positions p\n    where\n        p.car_id = $car_id\n        -- 添加 p.ideal_battery_range_km 条件以减少数据量并避免驾驶时的数据偏差（非均匀采样）\n        and p.ideal_battery_range_km is not null\n        and 1 = $include_average_percentiles\n),\ngen_date_series as (\n    select\n        -- 生成时间序列用于数据分桶，避免百分位数计算时的数据空缺\n        generate_series(to_timestamp(${__from:date:seconds} - (86400 * $days_moving_average_percentiles / 2)), to_timestamp(${__to:date:seconds}), concat($bucket_width, ' seconds')::INTERVAL) as series_id\n),\ndate_series as (\n    select\n        series_id at time zone 'UTC' as series_id,\n        -- 在连接前获取下一个时间段的起点\n        lead(series_id) over (order by series_id asc) at time zone 'UTC' as next_series_id\n    from\n        gen_date_series\n),\npositions_bucketed as (\n    select\n        series_id,\n        -- 简单平均值可能导致精度损失\n        avg(battery_level) as battery_level,\n        min(positions_filtered.date) as series_min_date\n    from\n        date_series\n    left join positions_filtered on\n        positions_filtered.date >= date_series.series_id\n        and positions_filtered.date < date_series.next_series_id\n    group by\n        series_id\n),\n-- PostgreSQL 无法通过窗口函数 LAST_VALUE 忽略 NULL 值，因此使用 COUNT 和 MAX 的天然行为\npositions_bucketed_gapfilling_locf_intermediate as (\n    select\n        series_id,\n        battery_level,\n        series_min_date,\n        count(battery_level) over (order by series_id) as i\n    from\n        positions_bucketed\n\n),\npositions_bucketed_gapfilled_locf as (\n    select\n        series_id,\n        series_min_date,\n        max(battery_level) over (partition by i) as battery_level_locf\n    from\n        positions_bucketed_gapfilling_locf_intermediate\n),\n-- PostgreSQL 无法将 PERCENTILE_DISC 作为窗口函数使用，因此使用 ARRAY_AGG 和 UNNEST\npositions_bucketed_gapfilled_locf_percentile_intermediate as (\n    select\n        series_id,\n        series_min_date,\n        min(series_min_date) over () as min_date,\n        array_agg(battery_level_locf) over w as arr,\n        avg(battery_level_locf) over w as battery_level_avg\n    from\n        positions_bucketed_gapfilled_locf\n    window w as (rows between (86400 / $bucket_width) * ($days_moving_average_percentiles / 2) preceding and (86400 / $bucket_width) * ($days_moving_average_percentiles / 2) following)\n)\n\nselect\n    series_id::timestamptz,\n    (select percentile_cont(0.075) within group (order by s) from unnest(arr) trick(s)) as \"${days_moving_average_percentiles}天移动7.5%百分位数（${bucket_width:text}桶）\",\n    battery_level_avg as \"${days_moving_average_percentiles}天移动平均值（${bucket_width:text}桶）\",\n    (select percentile_cont(0.5) within group (order by s) from unnest(arr) trick(s)) as \"${days_moving_average_percentiles}天移动中位数（${bucket_width:text}桶）\",\n    (select percentile_cont(0.925) within group (order by s) from unnest(arr) trick(s)) as \"${days_moving_average_percentiles}天移动92.5%百分位数（${bucket_width:text}桶）\"\nfrom\n    positions_bucketed_gapfilled_locf_percentile_intermediate where $__timeFilter(series_id) and series_min_date >= min_date",
+          "refId": "C",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "电池电量",
+      "transformations": [
+        {
+          "id": "configFromData",
+          "options": {
+            "applyTo": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "configRefId": "B",
+            "mappings": [
+              {
+                "fieldName": "lower",
+                "handlerArguments": {
+                  "threshold": {
+                    "color": "green"
+                  }
+                },
+                "handlerKey": "threshold1"
+              },
+              {
+                "fieldName": "upper",
+                "handlerArguments": {
+                  "threshold": {
+                    "color": "green"
+                  }
+                },
+                "handlerKey": "threshold1"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 41,
+  "tags": [
+    "tesla"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "TeslaMate"
+        },
+        "definition": "SELECT\n    id as __value,\n    CASE WHEN COUNT(id) OVER (PARTITION BY name) > 1 AND name IS NOT NULL THEN CONCAT(name, ' - ', RIGHT(vin, 6)) ELSE COALESCE(name, CONCAT('VIN ', vin)) end as __text \nFROM cars\nORDER BY display_priority ASC, name ASC, vin ASC;",
+        "hide": 2,
+        "includeAll": true,
+        "label": "车辆",
+        "name": "car_id",
+        "options": [],
+        "query": "SELECT\n    id as __value,\n    CASE WHEN COUNT(id) OVER (PARTITION BY name) > 1 AND name IS NOT NULL THEN CONCAT(name, ' - ', RIGHT(vin, 6)) ELSE COALESCE(name, CONCAT('VIN ', vin)) end as __text \nFROM cars\nORDER BY display_priority ASC, name ASC, vin ASC;",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "TeslaMate"
+        },
+        "definition": "select base_url from settings limit 1;",
+        "hide": 2,
+        "includeAll": false,
+        "name": "base_url",
+        "options": [],
+        "query": "select base_url from settings limit 1;",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "2小时",
+          "value": "7200"
+        },
+        "description": "TeslaMate中用于计算移动平均值/百分位数的数据是非均匀采样的。为避免偏向更频繁采样的值，数据被分桶处理。对于没有采样值的桶，将使用最后观察到的值。分桶不是时间加权的，而是简单平均值。增加桶宽会导致精度损失。",
+        "includeAll": false,
+        "label": "分桶宽度",
+        "name": "bucket_width",
+        "options": [
+          {
+            "selected": false,
+            "text": "1小时",
+            "value": "3600"
+          },
+          {
+            "selected": true,
+            "text": "2小时",
+            "value": "7200"
+          },
+          {
+            "selected": false,
+            "text": "4小时",
+            "value": "14400"
+          }
+        ],
+        "query": "1h : 3600, 2h : 7200, 4h : 14400",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "是",
+          "value": "1"
+        },
+        "includeAll": false,
+        "label": "包含移动平均值/百分位数",
+        "name": "include_average_percentiles",
+        "options": [
+          {
+            "selected": false,
+            "text": "否",
+            "value": "0"
+          },
+          {
+            "selected": true,
+            "text": "是",
+            "value": "1"
+          }
+        ],
+        "query": "no : 0, yes : 1",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "text": "间隔的1/6",
+          "value": "6"
+        },
+        "description": "",
+        "includeAll": false,
+        "label": "移动平均值/百分位数宽度",
+        "name": "intervals_moving_average_percentiles",
+        "options": [
+          {
+            "selected": true,
+            "text": "间隔的1/6",
+            "value": "6"
+          },
+          {
+            "selected": false,
+            "text": "间隔的1/12",
+            "value": "12"
+          }
+        ],
+        "query": "1/6 of interval : 6, 1/12 of interval : 12",
+        "type": "custom"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "TeslaMate"
+        },
+        "definition": "select ((${__to:date:seconds} - ${__from:date:seconds}) / 86400 / $intervals_moving_average_percentiles)",
+        "hide": 2,
+        "includeAll": false,
+        "name": "days_moving_average_percentiles",
+        "options": [],
+        "query": "select ((${__to:date:seconds} - ${__from:date:seconds}) / 86400 / $intervals_moving_average_percentiles)",
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6M",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "电池电量",
+  "uid": "WopVO_mgz",
+  "version": 1
+}
